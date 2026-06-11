@@ -2,8 +2,6 @@ import pytest
 import numpy as np
 from unittest.mock import patch, MagicMock
 
-import gymnasium as gym
-
 from custom_cartpole import WindCartPoleEnv
 from main import run_simulation, main
 
@@ -151,8 +149,8 @@ def test_run_simulation_make_error(
     mock_gym_make: MagicMock, caplog: pytest.LogCaptureFixture
 ) -> None:
     mock_gym_make.side_effect = Exception("Gym make error")
-    run_simulation()
-    assert "Failed to create environment: Gym make error" in caplog.text
+    run_simulation(max_retries=0)
+    assert "Failed to create environment after retries: Gym make error" in caplog.text
 
 
 @patch("main.gym.make")
@@ -162,8 +160,8 @@ def test_run_simulation_reset_error(
     mock_env = MagicMock()
     mock_env.reset.side_effect = Exception("Gym reset error")
     mock_gym_make.return_value = mock_env
-    run_simulation(episodes=1)
-    assert "Failed to reset environment: Gym reset error" in caplog.text
+    run_simulation(episodes=1, max_retries=0)
+    assert "Failed to reset environment after retries: Gym reset error" in caplog.text
 
 
 @patch("main.gym.make")
@@ -174,8 +172,17 @@ def test_run_simulation_step_error(
     mock_env.reset.return_value = (np.zeros(4), {})
     mock_env.step.side_effect = Exception("Gym step error")
     mock_gym_make.return_value = mock_env
-    run_simulation(episodes=1)
-    assert "Error during step: Gym step error" in caplog.text
+    run_simulation(episodes=1, max_retries=0)
+    assert "Error during step after retries: Gym step error" in caplog.text
+
+
+@patch("main.gym.make")
+def test_run_simulation_fallback(
+    mock_gym_make: MagicMock, caplog: pytest.LogCaptureFixture
+) -> None:
+    mock_gym_make.side_effect = [Exception("Gym make error"), MagicMock()]
+    run_simulation(max_retries=0, fallback_kwargs={"wind_mode": "random"})
+    assert "Using fallback configuration for environment creation." in caplog.text
 
 
 @patch("main.gym.make")

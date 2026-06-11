@@ -72,7 +72,9 @@ class WindCartPoleEnv(CartPoleEnv):
             f"Initialized WindCartPoleEnv with wind_mode='{self.wind_mode}' and wind_intensity={self.wind_intensity}"
         )
 
-    def step(self, action: Union[int, np.ndarray]) -> Tuple[np.ndarray, float, bool, bool, Dict[str, Any]]:
+    def step(
+        self, action: Union[int, np.ndarray]
+    ) -> Tuple[np.ndarray, float, bool, bool, Dict[str, Any]]:
         """
         Run one timestep of the environment's dynamics.
 
