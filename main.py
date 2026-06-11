@@ -7,23 +7,29 @@ and run episodic simulations using a random agent.
 
 import logging
 import gymnasium as gym
+from typing import Any, Optional
 from custom_cartpole import WindCartPoleEnv
 
 # Configure logging
 logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+    level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 )
 logger = logging.getLogger(__name__)
 
 # Register the environment
 gym.register(
-    id='WindCartPole-v0',
-    entry_point='custom_cartpole:WindCartPoleEnv',
+    id="WindCartPole-v0",
+    entry_point="custom_cartpole:WindCartPoleEnv",
     max_episode_steps=500,
 )
 
-def run_simulation(env_id='WindCartPole-v0', episodes=5, render_mode=None, **env_kwargs):
+
+def run_simulation(
+    env_id: str = "WindCartPole-v0",
+    episodes: int = 5,
+    render_mode: Optional[str] = None,
+    **env_kwargs: Any,
+) -> None:
     """
     Run a simulation of the specified environment using a random agent.
 
@@ -64,7 +70,7 @@ def run_simulation(env_id='WindCartPole-v0', episodes=5, render_mode=None, **env
             logger.error(f"Error while closing environment: {e}")
 
 
-def _run_single_episode(env, episode_index):
+def _run_single_episode(env: gym.Env, episode_index: int) -> bool:
     """
     Run a single episode of the environment using a random action policy.
 
@@ -81,41 +87,45 @@ def _run_single_episode(env, episode_index):
     except Exception as e:
         logger.error(f"Failed to reset environment: {e}")
         return False
-        
+
     done = False
     truncated = False
-    total_reward = 0
+    total_reward = 0.0
     step_count = 0
-    
+
     while not done and not truncated:
         # Simple random agent
         action = env.action_space.sample()
-        
+
         try:
             obs, reward, done, truncated, info = env.step(action)
         except Exception as e:
             logger.error(f"Error during step: {e}")
             break
-            
-        total_reward += reward
+
+        total_reward += float(reward)
         step_count += 1
-        
-    logger.info(f"Episode {episode_index + 1}: Total Reward = {total_reward}, Steps = {step_count}")
+
+    logger.info(
+        f"Episode {episode_index + 1}: Total Reward = {total_reward}, Steps = {step_count}"
+    )
     return True
 
-def main():
+
+def main() -> None:
     """
     Main execution block.
-    
+
     Runs two sets of simulations to demonstrate the WindCartPole environment:
     1. A simulation with 'random' wind mode.
     2. A simulation with 'sinusoidal' wind mode.
     """
     logger.info("Running with random wind...")
-    run_simulation(wind_mode='random', wind_intensity=5.0)
-    
+    run_simulation(wind_mode="random", wind_intensity=5.0)
+
     logger.info("Running with sinusoidal wind...")
-    run_simulation(wind_mode='sinusoidal', wind_intensity=10.0)
+    run_simulation(wind_mode="sinusoidal", wind_intensity=10.0)
+
 
 if __name__ == "__main__":
     main()
