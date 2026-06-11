@@ -1,3 +1,10 @@
+"""
+Main entry point for running the WindCartPole-v0 simulation.
+
+This module provides functions to initialize the custom CartPole environment
+and run episodic simulations using a random agent.
+"""
+
 import logging
 import gymnasium as gym
 from custom_cartpole import WindCartPoleEnv
@@ -17,6 +24,19 @@ gym.register(
 )
 
 def run_simulation(env_id='WindCartPole-v0', episodes=5, render_mode=None, **env_kwargs):
+    """
+    Run a simulation of the specified environment using a random agent.
+
+    Args:
+        env_id (str): The ID of the registered Gymnasium environment to run. Defaults to 'WindCartPole-v0'.
+        episodes (int): The number of episodes to simulate. Defaults to 5.
+        render_mode (str, optional): The render mode for the environment (e.g., 'human', 'rgb_array'). Defaults to None.
+        **env_kwargs: Additional keyword arguments passed to the environment upon creation (e.g., wind_mode, wind_intensity).
+
+    Raises:
+        TypeError: If `episodes` is not an integer.
+        ValueError: If `episodes` is less than or equal to 0.
+    """
     if not isinstance(episodes, int):
         logger.error(f"episodes must be an integer, got {type(episodes).__name__}")
         raise TypeError(f"episodes must be an integer, got {type(episodes).__name__}")
@@ -46,8 +66,14 @@ def run_simulation(env_id='WindCartPole-v0', episodes=5, render_mode=None, **env
 
 def _run_single_episode(env, episode_index):
     """
-    Helper function to run a single episode.
-    Extracts the inner simulation loop to reduce nesting.
+    Run a single episode of the environment using a random action policy.
+
+    Args:
+        env (gym.Env): The initialized Gymnasium environment.
+        episode_index (int): The current episode number (used for logging).
+
+    Returns:
+        bool: True if the episode completed successfully, False if an error occurred.
     """
     try:
         obs, info = env.reset()
@@ -78,6 +104,13 @@ def _run_single_episode(env, episode_index):
     return True
 
 def main():
+    """
+    Main execution block.
+    
+    Runs two sets of simulations to demonstrate the WindCartPole environment:
+    1. A simulation with 'random' wind mode.
+    2. A simulation with 'sinusoidal' wind mode.
+    """
     logger.info("Running with random wind...")
     run_simulation(wind_mode='random', wind_intensity=5.0)
     

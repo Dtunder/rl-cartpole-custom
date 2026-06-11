@@ -7,14 +7,30 @@ logger = logging.getLogger(__name__)
 
 class WindCartPoleEnv(CartPoleEnv):
     """
-    Custom CartPole environment that includes a simulated external wind disturbance.
-    The wind applies an external force to the cart.
+    A custom Gymnasium environment based on the classic CartPole, introducing simulated external wind disturbances.
+    
+    The wind applies an external force to the cart, making the balancing task more challenging.
+    This environment is registered as 'WindCartPole-v0'.
+    
+    Attributes:
+        wind_mode (str): The mode of the wind disturbance ('random' or 'sinusoidal').
+        wind_intensity (float): The maximum magnitude or scale of the wind force.
+        current_step (int): Tracks the number of steps elapsed in the current episode.
     """
     
     def __init__(self, wind_mode="random", wind_intensity=1.0, **kwargs):
         """
-        wind_mode: 'random' or 'sinusoidal'
-        wind_intensity: scale of the wind force
+        Initialize the WindCartPole environment.
+
+        Args:
+            wind_mode (str): The type of wind disturbance. Options are 'random' (uniform noise) 
+                or 'sinusoidal' (periodic force based on step count). Defaults to "random".
+            wind_intensity (float): The intensity/scale of the wind. Must be non-negative. Defaults to 1.0.
+            **kwargs: Additional keyword arguments passed to the base `CartPoleEnv`.
+
+        Raises:
+            TypeError: If `wind_mode` is not a string or `wind_intensity` is not a number.
+            ValueError: If `wind_mode` is invalid or `wind_intensity` is negative.
         """
         if not isinstance(wind_mode, str):
             logger.error(f"wind_mode must be a string, got {type(wind_mode).__name__}")
@@ -36,6 +52,24 @@ class WindCartPoleEnv(CartPoleEnv):
         logger.info(f"Initialized WindCartPoleEnv with wind_mode='{self.wind_mode}' and wind_intensity={self.wind_intensity}")
 
     def step(self, action):
+        """
+        Run one timestep of the environment's dynamics.
+
+        Args:
+            action (int): The action to take. Should be 0 (push cart to the left) or 1 (push cart to the right).
+
+        Returns:
+            tuple: A tuple containing:
+                - observation (np.ndarray): The current state of the environment `(x, x_dot, theta, theta_dot)`.
+                - reward (float): The reward obtained from the action.
+                - terminated (bool): Whether the episode has reached a terminal state (pole fell or out of bounds).
+                - truncated (bool): Whether the episode was truncated (always False for this environment natively, but handled by wrappers).
+                - info (dict): Additional information (empty in this environment).
+
+        Raises:
+            ValueError: If the action provided is not valid in the action space.
+            RuntimeError: If the environment has not been reset before calling `step()`.
+        """
         err_msg = f"{action!r} ({type(action)}) invalid"
         if not self.action_space.contains(action):
             logger.error(err_msg)
@@ -115,6 +149,18 @@ class WindCartPoleEnv(CartPoleEnv):
         return np.array(self.state, dtype=np.float32), reward, terminated, False, {}
 
     def reset(self, *, seed=None, options=None):
+        """
+        Resets the environment to an initial state and returns the initial observation.
+
+        Args:
+            seed (int, optional): The seed that is used to initialize the environment's PRNG. Defaults to None.
+            options (dict, optional): Additional information to specify how the environment is reset. Defaults to None.
+
+        Returns:
+            tuple: A tuple containing:
+                - observation (np.ndarray): The initial state of the environment.
+                - info (dict): Additional information dictionary.
+        """
         self.current_step = 0
         logger.info("Environment reset.")
         return super().reset(seed=seed, options=options)
