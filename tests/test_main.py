@@ -145,38 +145,34 @@ def test_run_simulation_validation():
         run_simulation(episodes=0)
 
 @patch('main.gym.make')
-def test_run_simulation_make_error(mock_gym_make, capsys):
+def test_run_simulation_make_error(mock_gym_make, caplog):
     mock_gym_make.side_effect = Exception("Gym make error")
     run_simulation()
-    captured = capsys.readouterr()
-    assert "Failed to create environment: Gym make error" in captured.out
+    assert "Failed to create environment: Gym make error" in caplog.text
 
 @patch('main.gym.make')
-def test_run_simulation_reset_error(mock_gym_make, capsys):
+def test_run_simulation_reset_error(mock_gym_make, caplog):
     mock_env = MagicMock()
     mock_env.reset.side_effect = Exception("Gym reset error")
     mock_gym_make.return_value = mock_env
     run_simulation(episodes=1)
-    captured = capsys.readouterr()
-    assert "Failed to reset environment: Gym reset error" in captured.out
+    assert "Failed to reset environment: Gym reset error" in caplog.text
 
 @patch('main.gym.make')
-def test_run_simulation_step_error(mock_gym_make, capsys):
+def test_run_simulation_step_error(mock_gym_make, caplog):
     mock_env = MagicMock()
     mock_env.reset.return_value = (np.zeros(4), {})
     mock_env.step.side_effect = Exception("Gym step error")
     mock_gym_make.return_value = mock_env
     run_simulation(episodes=1)
-    captured = capsys.readouterr()
-    assert "Error during step: Gym step error" in captured.out
+    assert "Error during step: Gym step error" in caplog.text
 
 @patch('main.gym.make')
-def test_run_simulation_close_error(mock_gym_make, capsys):
+def test_run_simulation_close_error(mock_gym_make, caplog):
     mock_env = MagicMock()
     mock_env.reset.return_value = (np.zeros(4), {})
     mock_env.step.return_value = (np.zeros(4), 1.0, True, False, {})
     mock_env.close.side_effect = Exception("Gym close error")
     mock_gym_make.return_value = mock_env
     run_simulation(episodes=1)
-    captured = capsys.readouterr()
-    assert "Error while closing environment: Gym close error" in captured.out
+    assert "Error while closing environment: Gym close error" in caplog.text

@@ -1,6 +1,9 @@
 import math
+import logging
 import numpy as np
 from gymnasium.envs.classic_control.cartpole import CartPoleEnv
+
+logger = logging.getLogger(__name__)
 
 class WindCartPoleEnv(CartPoleEnv):
     """
@@ -14,24 +17,31 @@ class WindCartPoleEnv(CartPoleEnv):
         wind_intensity: scale of the wind force
         """
         if not isinstance(wind_mode, str):
+            logger.error(f"wind_mode must be a string, got {type(wind_mode).__name__}")
             raise TypeError(f"wind_mode must be a string, got {type(wind_mode).__name__}")
         if wind_mode not in ("random", "sinusoidal"):
+            logger.error(f"wind_mode must be 'random' or 'sinusoidal', got {wind_mode!r}")
             raise ValueError(f"wind_mode must be 'random' or 'sinusoidal', got {wind_mode!r}")
         if not isinstance(wind_intensity, (int, float)):
+            logger.error(f"wind_intensity must be a number, got {type(wind_intensity).__name__}")
             raise TypeError(f"wind_intensity must be a number, got {type(wind_intensity).__name__}")
         if wind_intensity < 0:
+            logger.error(f"wind_intensity must be non-negative, got {wind_intensity}")
             raise ValueError(f"wind_intensity must be non-negative, got {wind_intensity}")
             
         super().__init__(**kwargs)
         self.wind_mode = wind_mode
         self.wind_intensity = float(wind_intensity)
         self.current_step = 0
+        logger.info(f"Initialized WindCartPoleEnv with wind_mode='{self.wind_mode}' and wind_intensity={self.wind_intensity}")
 
     def step(self, action):
         err_msg = f"{action!r} ({type(action)}) invalid"
         if not self.action_space.contains(action):
+            logger.error(err_msg)
             raise ValueError(err_msg)
         if self.state is None:
+            logger.error("Call reset before using step method.")
             raise RuntimeError("Call reset before using step method.")
         
         self.current_step += 1
@@ -77,6 +87,7 @@ class WindCartPoleEnv(CartPoleEnv):
             theta = theta + self.tau * theta_dot
 
         self.state = (x, x_dot, theta, theta_dot)
+        logger.debug(f"Step {self.current_step}: action={action}, wind_force={wind_force:.4f}, state={self.state}")
 
         terminated = bool(
             x < -self.x_threshold
@@ -89,11 +100,12 @@ class WindCartPoleEnv(CartPoleEnv):
             reward = 1.0
         elif self.steps_beyond_terminated is None:
             # Pole just fell!
+            logger.info(f"Pole fell at step {self.current_step}. Episode terminated.")
             self.steps_beyond_terminated = 0
             reward = 1.0
         else:
             if self.steps_beyond_terminated == 0:
-                pass # Already warned in CartPoleEnv
+                logger.warning("Step called after episode was terminated.")
             self.steps_beyond_terminated += 1
             reward = 0.0
 
@@ -104,4 +116,5 @@ class WindCartPoleEnv(CartPoleEnv):
 
     def reset(self, *, seed=None, options=None):
         self.current_step = 0
+        logger.info("Environment reset.")
         return super().reset(seed=seed, options=options)
