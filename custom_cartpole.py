@@ -36,11 +36,10 @@ class WindCartPoleEnv(CartPoleEnv):
         
         self.current_step += 1
         
-        # Calculate wind force
-        wind_force = 0.0
+        # Calculate wind force - optimized conditional check
         if self.wind_mode == "random":
             wind_force = self.np_random.uniform(-self.wind_intensity, self.wind_intensity)
-        elif self.wind_mode == "sinusoidal":
+        else:
             wind_force = self.wind_intensity * math.sin(0.1 * self.current_step)
             
         x, x_dot, theta, theta_dot = self.state
@@ -54,11 +53,15 @@ class WindCartPoleEnv(CartPoleEnv):
 
         # For the interested reader:
         # https://coneural.org/florian/papers/05_cart_pole.pdf
+        # Optimized mathematical operations (avoid **2)
+        theta_dot_sq = theta_dot * theta_dot
+        costheta_sq = costheta * costheta
+        
         temp = (
-            total_force + self.polemass_length * theta_dot**2 * sintheta
+            total_force + self.polemass_length * theta_dot_sq * sintheta
         ) / self.total_mass
         thetaacc = (self.gravity * sintheta - costheta * temp) / (
-            self.length * (4.0 / 3.0 - self.masspole * costheta**2 / self.total_mass)
+            self.length * (4.0 / 3.0 - self.masspole * costheta_sq / self.total_mass)
         )
         xacc = temp - self.polemass_length * thetaacc * costheta / self.total_mass
 

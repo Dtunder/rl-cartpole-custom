@@ -23,37 +23,47 @@ def run_simulation(env_id='WindCartPole-v0', episodes=5, render_mode=None, **env
 
     try:
         for episode in range(episodes):
-            try:
-                obs, info = env.reset()
-            except Exception as e:
-                print(f"Failed to reset environment: {e}")
+            success = _run_single_episode(env, episode)
+            if not success:
                 break
-                
-            done = False
-            truncated = False
-            total_reward = 0
-            step_count = 0
-            
-            while not done and not truncated:
-                # Simple random agent
-                action = env.action_space.sample()
-                
-                try:
-                    obs, reward, done, truncated, info = env.step(action)
-                except Exception as e:
-                    print(f"Error during step: {e}")
-                    done = True # Abort episode
-                    break
-                    
-                total_reward += reward
-                step_count += 1
-                
-            print(f"Episode {episode + 1}: Total Reward = {total_reward}, Steps = {step_count}")
     finally:
         try:
             env.close()
         except Exception as e:
             print(f"Error while closing environment: {e}")
+
+
+def _run_single_episode(env, episode_index):
+    """
+    Helper function to run a single episode.
+    Extracts the inner simulation loop to reduce nesting.
+    """
+    try:
+        obs, info = env.reset()
+    except Exception as e:
+        print(f"Failed to reset environment: {e}")
+        return False
+        
+    done = False
+    truncated = False
+    total_reward = 0
+    step_count = 0
+    
+    while not done and not truncated:
+        # Simple random agent
+        action = env.action_space.sample()
+        
+        try:
+            obs, reward, done, truncated, info = env.step(action)
+        except Exception as e:
+            print(f"Error during step: {e}")
+            break
+            
+        total_reward += reward
+        step_count += 1
+        
+    print(f"Episode {episode_index + 1}: Total Reward = {total_reward}, Steps = {step_count}")
+    return True
 
 def main():
     print("Running with random wind...")
