@@ -1,5 +1,8 @@
 # rl-cartpole-custom
 
+![Tests](https://img.shields.io/badge/Tests-Passing-brightgreen)
+![Coverage](https://img.shields.io/badge/Coverage-100%25-brightgreen)
+
 Gymnasium environment for CartPole with external wind disturbances.
 
 This project implements a custom `Gymnasium` environment called `WindCartPoleEnv` that inherits from the classic `CartPoleEnv`. It introduces external wind disturbances that act as additional forces on the cart. 

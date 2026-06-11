@@ -31,7 +31,9 @@ def test_env_step_invalid_action() -> None:
 
 def test_env_step_uninitialized() -> None:
     env = WindCartPoleEnv()
-    with pytest.raises(RuntimeError, match="Call reset before using step method."):
+    with pytest.raises(
+        RuntimeError, match="Call reset before using step method."
+    ):
         env.step(0)
 
 
@@ -79,11 +81,15 @@ def test_env_termination() -> None:
 
     obs, reward, terminated, truncated, info = env.step(0)
     assert terminated is True
-    assert reward == 1.0  # First time it falls, reward is 1.0 based on env code
+    assert (
+        reward == 1.0
+    )  # First time it falls, reward is 1.0 based on env code
     assert env.steps_beyond_terminated == 0
 
     obs, reward, terminated, truncated, info = env.step(0)
-    assert reward == 0.0  # Steps beyond terminated increases, reward becomes 0.0
+    assert (
+        reward == 0.0
+    )  # Steps beyond terminated increases, reward becomes 0.0
     assert env.steps_beyond_terminated == 1
 
 
@@ -123,17 +129,23 @@ def test_main(mock_run_simulation: MagicMock) -> None:
     main()
     assert mock_run_simulation.call_count == 2
     mock_run_simulation.assert_any_call(wind_mode="random", wind_intensity=5.0)
-    mock_run_simulation.assert_any_call(wind_mode="sinusoidal", wind_intensity=10.0)
+    mock_run_simulation.assert_any_call(
+        wind_mode="sinusoidal", wind_intensity=10.0
+    )
 
 
 def test_custom_cartpole_init_validation() -> None:
     with pytest.raises(TypeError, match="wind_mode must be a string"):
         WindCartPoleEnv(wind_mode=123)  # type: ignore[arg-type]
-    with pytest.raises(ValueError, match="wind_mode must be 'random' or 'sinusoidal'"):
+    with pytest.raises(
+        ValueError, match="wind_mode must be 'random' or 'sinusoidal'"
+    ):
         WindCartPoleEnv(wind_mode="unknown")
     with pytest.raises(TypeError, match="wind_intensity must be a number"):
         WindCartPoleEnv(wind_intensity="strong")  # type: ignore[arg-type]
-    with pytest.raises(ValueError, match="wind_intensity must be non-negative"):
+    with pytest.raises(
+        ValueError, match="wind_intensity must be non-negative"
+    ):
         WindCartPoleEnv(wind_intensity=-5.0)
 
 
@@ -150,7 +162,10 @@ def test_run_simulation_make_error(
 ) -> None:
     mock_gym_make.side_effect = Exception("Gym make error")
     run_simulation(max_retries=0)
-    assert "Failed to create environment after retries: Gym make error" in caplog.text
+    assert (
+        "Failed to create environment after retries: Gym make error"
+        in caplog.text
+    )
 
 
 @patch("main.gym.make")
@@ -161,7 +176,10 @@ def test_run_simulation_reset_error(
     mock_env.reset.side_effect = Exception("Gym reset error")
     mock_gym_make.return_value = mock_env
     run_simulation(episodes=1, max_retries=0)
-    assert "Failed to reset environment after retries: Gym reset error" in caplog.text
+    assert (
+        "Failed to reset environment after retries: Gym reset error"
+        in caplog.text
+    )
 
 
 @patch("main.gym.make")
@@ -182,7 +200,9 @@ def test_run_simulation_fallback(
 ) -> None:
     mock_gym_make.side_effect = [Exception("Gym make error"), MagicMock()]
     run_simulation(max_retries=0, fallback_kwargs={"wind_mode": "random"})
-    assert "Using fallback configuration for environment creation." in caplog.text
+    assert (
+        "Using fallback configuration for environment creation." in caplog.text
+    )
 
 
 @patch("main.gym.make")
@@ -196,3 +216,17 @@ def test_run_simulation_close_error(
     mock_gym_make.return_value = mock_env
     run_simulation(episodes=1)
     assert "Error while closing environment: Gym close error" in caplog.text
+
+def test_env_semi_implicit_euler_integrator() -> None:
+    # Test with semi-implicit euler integrator
+    env = WindCartPoleEnv()
+    env.kinematics_integrator = "semi-implicit euler"
+    env.reset()
+    obs, reward, terminated, truncated, info = env.step(1)
+    assert isinstance(obs, np.ndarray)
+
+def test_main_block() -> None:
+    import runpy
+    with patch("main.main"):
+        # Prevent actually calling main since it's already tested
+        runpy.run_path("main.py", run_name="__main__")

@@ -41,10 +41,16 @@ class WindCartPoleEnv(CartPoleEnv):
             ValueError: If `wind_mode` is invalid or `wind_intensity` is negative.
         """
         wind_mode = wind_mode if wind_mode is not None else CONFIG["wind_mode"]
-        wind_intensity = wind_intensity if wind_intensity is not None else CONFIG["wind_intensity"]
+        wind_intensity = (
+            wind_intensity
+            if wind_intensity is not None
+            else CONFIG["wind_intensity"]
+        )
 
         if not isinstance(wind_mode, str):
-            logger.error(f"wind_mode must be a string, got {type(wind_mode).__name__}")
+            logger.error(
+                f"wind_mode must be a string, got {type(wind_mode).__name__}"
+            )
             raise TypeError(
                 f"wind_mode must be a string, got {type(wind_mode).__name__}"
             )
@@ -63,7 +69,9 @@ class WindCartPoleEnv(CartPoleEnv):
                 f"wind_intensity must be a number, got {type(wind_intensity).__name__}"
             )
         if wind_intensity < 0:
-            logger.error(f"wind_intensity must be non-negative, got {wind_intensity}")
+            logger.error(
+                f"wind_intensity must be non-negative, got {wind_intensity}"
+            )
             raise ValueError(
                 f"wind_intensity must be non-negative, got {wind_intensity}"
             )
@@ -113,7 +121,9 @@ class WindCartPoleEnv(CartPoleEnv):
                 -self.wind_intensity, self.wind_intensity
             )
         else:
-            wind_force = self.wind_intensity * math.sin(CONFIG["sinusoidal_frequency"] * self.current_step)
+            wind_force = self.wind_intensity * math.sin(
+                CONFIG["sinusoidal_frequency"] * self.current_step
+            )
 
         x, x_dot, theta, theta_dot = self.state
 
@@ -134,9 +144,12 @@ class WindCartPoleEnv(CartPoleEnv):
             total_force + self.polemass_length * theta_dot_sq * sintheta
         ) / self.total_mass
         thetaacc = (self.gravity * sintheta - costheta * temp) / (
-            self.length * (4.0 / 3.0 - self.masspole * costheta_sq / self.total_mass)
+            self.length
+            * (4.0 / 3.0 - self.masspole * costheta_sq / self.total_mass)
         )
-        xacc = temp - self.polemass_length * thetaacc * costheta / self.total_mass
+        xacc = (
+            temp - self.polemass_length * thetaacc * costheta / self.total_mass
+        )
 
         if self.kinematics_integrator == "euler":
             x = x + self.tau * x_dot
@@ -165,7 +178,9 @@ class WindCartPoleEnv(CartPoleEnv):
             reward = 1.0
         elif self.steps_beyond_terminated is None:
             # Pole just fell!
-            logger.info(f"Pole fell at step {self.current_step}. Episode terminated.")
+            logger.info(
+                f"Pole fell at step {self.current_step}. Episode terminated."
+            )
             self.steps_beyond_terminated = 0  # type: ignore[assignment]
             reward = 1.0
         else:
@@ -177,7 +192,13 @@ class WindCartPoleEnv(CartPoleEnv):
         if self.render_mode == "human":
             self.render()
 
-        return np.array(self.state, dtype=np.float32), reward, terminated, False, {}
+        return (
+            np.array(self.state, dtype=np.float32),
+            reward,
+            terminated,
+            False,
+            {},
+        )
 
     def reset(
         self,

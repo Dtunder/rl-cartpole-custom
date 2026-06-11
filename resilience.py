@@ -44,7 +44,9 @@ def execute_with_resilience(
         ValueError: If `max_retries` or `delay` is negative.
         Exception: The last exception raised by the target function if all retries fail and no fallback is provided.
     """
-    max_retries = max_retries if max_retries is not None else CONFIG["max_retries"]
+    max_retries = (
+        max_retries if max_retries is not None else CONFIG["max_retries"]
+    )
     delay = delay if delay is not None else CONFIG["resilience_delay"]
 
     if not isinstance(max_retries, int):
@@ -52,7 +54,9 @@ def execute_with_resilience(
             f"max_retries must be an integer, got {type(max_retries).__name__}"
         )
     if max_retries < 0:
-        raise ValueError(f"max_retries must be non-negative, got {max_retries}")
+        raise ValueError(
+            f"max_retries must be non-negative, got {max_retries}"
+        )
     if not isinstance(delay, (int, float)):
         raise TypeError(f"delay must be a number, got {type(delay).__name__}")
     if delay < 0:
