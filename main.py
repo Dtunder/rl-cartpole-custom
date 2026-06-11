@@ -9,6 +9,7 @@ import logging
 import gymnasium as gym
 from typing import Any, Optional, Dict
 from resilience import execute_with_resilience
+from config import CONFIG
 
 # Configure logging
 logging.basicConfig(
@@ -20,15 +21,15 @@ logger = logging.getLogger(__name__)
 gym.register(
     id="WindCartPole-v0",
     entry_point="custom_cartpole:WindCartPoleEnv",
-    max_episode_steps=500,
+    max_episode_steps=CONFIG["max_episode_steps"],
 )
 
 
 def run_simulation(
     env_id: str = "WindCartPole-v0",
-    episodes: int = 5,
+    episodes: Optional[int] = None,
     render_mode: Optional[str] = None,
-    max_retries: int = 3,
+    max_retries: Optional[int] = None,
     fallback_kwargs: Optional[Dict[str, Any]] = None,
     **env_kwargs: Any,
 ) -> None:
@@ -37,9 +38,9 @@ def run_simulation(
 
     Args:
         env_id (str): The ID of the registered Gymnasium environment to run. Defaults to 'WindCartPole-v0'.
-        episodes (int): The number of episodes to simulate. Defaults to 5.
+        episodes (int): The number of episodes to simulate.
         render_mode (str, optional): The render mode for the environment (e.g., 'human', 'rgb_array'). Defaults to None.
-        max_retries (int): Maximum number of retries for resilient operations. Defaults to 3.
+        max_retries (int): Maximum number of retries for resilient operations.
         fallback_kwargs (Optional[Dict[str, Any]]): Fallback keyword arguments if environment creation fails.
         **env_kwargs: Additional keyword arguments passed to the environment upon creation (e.g., wind_mode, wind_intensity).
 
@@ -47,6 +48,9 @@ def run_simulation(
         TypeError: If `episodes` is not an integer.
         ValueError: If `episodes` is less than or equal to 0.
     """
+    episodes = episodes if episodes is not None else CONFIG["episodes"]
+    max_retries = max_retries if max_retries is not None else CONFIG["max_retries"]
+
     if not isinstance(episodes, int):
         logger.error(f"episodes must be an integer, got {type(episodes).__name__}")
         raise TypeError(f"episodes must be an integer, got {type(episodes).__name__}")
@@ -69,7 +73,7 @@ def run_simulation(
             gym.make,
             env_id,
             max_retries=max_retries,
-            delay=0.5,
+            delay=CONFIG["main_make_delay"],
             fallback=fallback_make if fallback_kwargs else None,
             render_mode=render_mode,
             **env_kwargs,
@@ -91,7 +95,7 @@ def run_simulation(
             logger.error(f"Error while closing environment: {e}")
 
 
-def _run_single_episode(env: gym.Env, episode_index: int, max_retries: int = 3) -> bool:
+def _run_single_episode(env: gym.Env, episode_index: int, max_retries: Optional[int] = None) -> bool:
     """
     Run a single episode of the environment using a random action policy.
 
@@ -103,9 +107,10 @@ def _run_single_episode(env: gym.Env, episode_index: int, max_retries: int = 3) 
     Returns:
         bool: True if the episode completed successfully, False if an error occurred.
     """
+    max_retries = max_retries if max_retries is not None else CONFIG["max_retries"]
     try:
         obs, info = execute_with_resilience(
-            env.reset, max_retries=max_retries, delay=0.1
+            env.reset, max_retries=max_retries, delay=CONFIG["main_reset_delay"]
         )
         logger.info(f"Starting Episode {episode_index + 1}")
     except Exception as e:
@@ -123,7 +128,7 @@ def _run_single_episode(env: gym.Env, episode_index: int, max_retries: int = 3) 
 
         try:
             obs, reward, done, truncated, info = execute_with_resilience(
-                env.step, action, max_retries=max_retries, delay=0.1
+                env.step, action, max_retries=max_retries, delay=CONFIG["main_step_delay"]
             )
         except Exception as e:
             logger.error(f"Error during step after retries: {e}")
@@ -147,10 +152,10 @@ def main() -> None:
     2. A simulation with 'sinusoidal' wind mode.
     """
     logger.info("Running with random wind...")
-    run_simulation(wind_mode="random", wind_intensity=5.0)
+    run_simulation(wind_mode="random", wind_intensity=CONFIG["main_random_wind_intensity"])
 
     logger.info("Running with sinusoidal wind...")
-    run_simulation(wind_mode="sinusoidal", wind_intensity=10.0)
+    run_simulation(wind_mode="sinusoidal", wind_intensity=CONFIG["main_sinusoidal_wind_intensity"])
 
 
 if __name__ == "__main__":

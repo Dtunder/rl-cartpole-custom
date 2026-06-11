@@ -3,6 +3,7 @@ import logging
 import numpy as np
 from typing import Any, Dict, Optional, Tuple, Union
 from gymnasium.envs.classic_control.cartpole import CartPoleEnv
+from config import CONFIG
 
 logger = logging.getLogger(__name__)
 
@@ -22,8 +23,8 @@ class WindCartPoleEnv(CartPoleEnv):
 
     def __init__(
         self,
-        wind_mode: str = "random",
-        wind_intensity: Union[int, float] = 1.0,
+        wind_mode: Optional[str] = None,
+        wind_intensity: Optional[Union[int, float]] = None,
         **kwargs: Any,
     ) -> None:
         """
@@ -31,14 +32,17 @@ class WindCartPoleEnv(CartPoleEnv):
 
         Args:
             wind_mode (str): The type of wind disturbance. Options are 'random' (uniform noise)
-                or 'sinusoidal' (periodic force based on step count). Defaults to "random".
-            wind_intensity (float): The intensity/scale of the wind. Must be non-negative. Defaults to 1.0.
+                or 'sinusoidal' (periodic force based on step count).
+            wind_intensity (float): The intensity/scale of the wind. Must be non-negative.
             **kwargs: Additional keyword arguments passed to the base `CartPoleEnv`.
 
         Raises:
             TypeError: If `wind_mode` is not a string or `wind_intensity` is not a number.
             ValueError: If `wind_mode` is invalid or `wind_intensity` is negative.
         """
+        wind_mode = wind_mode if wind_mode is not None else CONFIG["wind_mode"]
+        wind_intensity = wind_intensity if wind_intensity is not None else CONFIG["wind_intensity"]
+
         if not isinstance(wind_mode, str):
             logger.error(f"wind_mode must be a string, got {type(wind_mode).__name__}")
             raise TypeError(
@@ -109,7 +113,7 @@ class WindCartPoleEnv(CartPoleEnv):
                 -self.wind_intensity, self.wind_intensity
             )
         else:
-            wind_force = self.wind_intensity * math.sin(0.1 * self.current_step)
+            wind_force = self.wind_intensity * math.sin(CONFIG["sinusoidal_frequency"] * self.current_step)
 
         x, x_dot, theta, theta_dot = self.state
 

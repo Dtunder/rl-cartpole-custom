@@ -1,6 +1,7 @@
 import time
 import logging
 from typing import Any, Callable, Optional, Tuple, Type, TypeVar
+from config import CONFIG
 
 T = TypeVar("T")
 
@@ -10,8 +11,8 @@ logger = logging.getLogger(__name__)
 def execute_with_resilience(
     func: Callable[..., T],
     *args: Any,
-    max_retries: int = 3,
-    delay: float = 1.0,
+    max_retries: Optional[int] = None,
+    delay: Optional[float] = None,
     exceptions: Tuple[Type[Exception], ...] = (Exception,),
     fallback: Optional[Callable[..., T]] = None,
     **kwargs: Any,
@@ -43,6 +44,9 @@ def execute_with_resilience(
         ValueError: If `max_retries` or `delay` is negative.
         Exception: The last exception raised by the target function if all retries fail and no fallback is provided.
     """
+    max_retries = max_retries if max_retries is not None else CONFIG["max_retries"]
+    delay = delay if delay is not None else CONFIG["resilience_delay"]
+
     if not isinstance(max_retries, int):
         raise TypeError(
             f"max_retries must be an integer, got {type(max_retries).__name__}"
