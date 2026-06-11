@@ -13,15 +13,26 @@ class WindCartPoleEnv(CartPoleEnv):
         wind_mode: 'random' or 'sinusoidal'
         wind_intensity: scale of the wind force
         """
+        if not isinstance(wind_mode, str):
+            raise TypeError(f"wind_mode must be a string, got {type(wind_mode).__name__}")
+        if wind_mode not in ("random", "sinusoidal"):
+            raise ValueError(f"wind_mode must be 'random' or 'sinusoidal', got {wind_mode!r}")
+        if not isinstance(wind_intensity, (int, float)):
+            raise TypeError(f"wind_intensity must be a number, got {type(wind_intensity).__name__}")
+        if wind_intensity < 0:
+            raise ValueError(f"wind_intensity must be non-negative, got {wind_intensity}")
+            
         super().__init__(**kwargs)
         self.wind_mode = wind_mode
-        self.wind_intensity = wind_intensity
+        self.wind_intensity = float(wind_intensity)
         self.current_step = 0
 
     def step(self, action):
         err_msg = f"{action!r} ({type(action)}) invalid"
-        assert self.action_space.contains(action), err_msg
-        assert self.state is not None, "Call reset before using step method."
+        if not self.action_space.contains(action):
+            raise ValueError(err_msg)
+        if self.state is None:
+            raise RuntimeError("Call reset before using step method.")
         
         self.current_step += 1
         

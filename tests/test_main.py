@@ -27,13 +27,13 @@ def test_env_reset():
 def test_env_step_invalid_action():
     env = WindCartPoleEnv()
     env.reset()
-    with pytest.raises(AssertionError, match="invalid"):
+    with pytest.raises(ValueError, match="invalid"):
         env.step(5)
 
 
 def test_env_step_uninitialized():
     env = WindCartPoleEnv()
-    with pytest.raises(AssertionError, match="Call reset before using step method."):
+    with pytest.raises(RuntimeError, match="Call reset before using step method."):
         env.step(0)
 
 
@@ -127,3 +127,56 @@ def test_main(mock_run_simulation):
     mock_run_simulation.assert_any_call(wind_mode='random', wind_intensity=5.0)
     mock_run_simulation.assert_any_call(wind_mode='sinusoidal', wind_intensity=10.0)
 
+
+def test_custom_cartpole_init_validation():
+    with pytest.raises(TypeError, match="wind_mode must be a string"):
+        WindCartPoleEnv(wind_mode=123)
+    with pytest.raises(ValueError, match="wind_mode must be 'random' or 'sinusoidal'"):
+        WindCartPoleEnv(wind_mode="unknown")
+    with pytest.raises(TypeError, match="wind_intensity must be a number"):
+        WindCartPoleEnv(wind_intensity="strong")
+    with pytest.raises(ValueError, match="wind_intensity must be non-negative"):
+        WindCartPoleEnv(wind_intensity=-5.0)
+
+def test_run_simulation_validation():
+    with pytest.raises(TypeError, match="episodes must be an integer"):
+        run_simulation(episodes="five")
+    with pytest.raises(ValueError, match="episodes must be positive"):
+        run_simulation(episodes=0)
+
+@patch('main.gym.make')
+def test_run_simulation_make_error(mock_gym_make, capsys):
+    mock_gym_make.side_effect = Exception("Gym make error")
+    run_simulation()
+    captured = capsys.readouterr()
+    assert "Failed to create environment: Gym make error" in captured.out
+
+@patch('main.gym.make')
+def test_run_simulation_reset_error(mock_gym_make, capsys):
+    mock_env = MagicMock()
+    mock_env.reset.side_effect = Exception("Gym reset error")
+    mock_gym_make.return_value = mock_env
+    run_simulation(episodes=1)
+    captured = capsys.readouterr()
+    assert "Failed to reset environment: Gym reset error" in captured.out
+
+@patch('main.gym.make')
+def test_run_simulation_step_error(mock_gym_make, capsys):
+    mock_env = MagicMock()
+    mock_env.reset.return_value = (np.zeros(4), {})
+    mock_env.step.side_effect = Exception("Gym step error")
+    mock_gym_make.return_value = mock_env
+    run_simulation(episodes=1)
+    captured = capsys.readouterr()
+    assert "Error during step: Gym step error" in captured.out
+
+@patch('main.gym.make')
+def test_run_simulation_close_error(mock_gym_make, capsys):
+    mock_env = MagicMock()
+    mock_env.reset.return_value = (np.zeros(4), {})
+    mock_env.step.return_value = (np.zeros(4), 1.0, True, False, {})
+    mock_env.close.side_effect = Exception("Gym close error")
+    mock_gym_make.return_value = mock_env
+    run_simulation(episodes=1)
+    captured = capsys.readouterr()
+    assert "Error while closing environment: Gym close error" in captured.out

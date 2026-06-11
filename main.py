@@ -9,27 +9,51 @@ gym.register(
 )
 
 def run_simulation(env_id='WindCartPole-v0', episodes=5, render_mode=None, **env_kwargs):
-    print(f"Creating environment: {env_id} with kwargs: {env_kwargs}")
-    env = gym.make(env_id, render_mode=render_mode, **env_kwargs)
-    
-    for episode in range(episodes):
-        obs, info = env.reset()
-        done = False
-        truncated = False
-        total_reward = 0
-        step_count = 0
-        
-        while not done and not truncated:
-            # Simple random agent
-            action = env.action_space.sample()
-            
-            obs, reward, done, truncated, info = env.step(action)
-            total_reward += reward
-            step_count += 1
-            
-        print(f"Episode {episode + 1}: Total Reward = {total_reward}, Steps = {step_count}")
+    if not isinstance(episodes, int):
+        raise TypeError(f"episodes must be an integer, got {type(episodes).__name__}")
+    if episodes <= 0:
+        raise ValueError(f"episodes must be positive, got {episodes}")
 
-    env.close()
+    print(f"Creating environment: {env_id} with kwargs: {env_kwargs}")
+    try:
+        env = gym.make(env_id, render_mode=render_mode, **env_kwargs)
+    except Exception as e:
+        print(f"Failed to create environment: {e}")
+        return
+
+    try:
+        for episode in range(episodes):
+            try:
+                obs, info = env.reset()
+            except Exception as e:
+                print(f"Failed to reset environment: {e}")
+                break
+                
+            done = False
+            truncated = False
+            total_reward = 0
+            step_count = 0
+            
+            while not done and not truncated:
+                # Simple random agent
+                action = env.action_space.sample()
+                
+                try:
+                    obs, reward, done, truncated, info = env.step(action)
+                except Exception as e:
+                    print(f"Error during step: {e}")
+                    done = True # Abort episode
+                    break
+                    
+                total_reward += reward
+                step_count += 1
+                
+            print(f"Episode {episode + 1}: Total Reward = {total_reward}, Steps = {step_count}")
+    finally:
+        try:
+            env.close()
+        except Exception as e:
+            print(f"Error while closing environment: {e}")
 
 def main():
     print("Running with random wind...")
