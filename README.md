@@ -1,71 +1,48 @@
-# rl-cartpole-custom
+# WindCartPole (RL)
 
-![Tests](https://img.shields.io/badge/Tests-Passing-brightgreen)
-![Coverage](https://img.shields.io/badge/Coverage-100%25-brightgreen)
+[![Tests](https://github.com/Dtunder/rl-cartpole-custom/actions/workflows/tests.yml/badge.svg)](https://github.com/Dtunder/rl-cartpole-custom/actions/workflows/tests.yml)
 
-Gymnasium environment for CartPole with external wind disturbances.
+WindCartPole is a Gymnasium CartPole environment with configurable external wind. It keeps the `WindCartPoleEnv` and `WindCartPole-v0` interface and supports `none`, `random`, and `sinusoidal` wind.
 
-This project implements a custom `Gymnasium` environment called `WindCartPoleEnv` that inherits from the classic `CartPoleEnv`. It introduces external wind disturbances that act as additional forces on the cart. 
+## Method
 
-## Features
+- **LQR baseline:** a discrete linear-quadratic regulator is calculated from the dynamics linearized around the upright state. Its continuous control signal selects one of the environment's two force actions.
+- **Learning agent:** a four-weight linear threshold policy is tuned with the cross-entropy method (CEM), implemented in NumPy. CEM starts from the LQR weights and optimizes return over fixed seeded no-wind, random-wind, and sinusoidal-wind scenarios.
+- **Evaluation:** each policy uses the same 12 episode seeds per condition. Episode return is the number of steps survived, capped at 500. The evaluation seed range is 23100–23111.
 
-- **Custom Environment**: `WindCartPole-v0`
-- **Configurable Wind**:
-  - `wind_mode`: Can be set to `'random'` (uniform random noise) or `'sinusoidal'` (periodic oscillating force).
-  - `wind_intensity`: Adjust the scale of the wind force.
+## Results
 
-## Prerequisites
+![Comparison](results/comparison.png)
 
-To install the necessary dependencies, run:
+Measured with `python evaluate.py` on 2026-10-28. Values are mean steps survived ± population standard deviation across 12 seeded episodes (cap 500); the last column is the mean absolute pole angle over the episode, a measure of stabilisation quality. Full results: [`results/results.csv`](results/results.csv).
+
+| Wind | Force (N) | Random | LQR | CEM linear policy | Mean abs. pole angle LQR / CEM (°) |
+|---|---:|---:|---:|---:|---:|
+| none | 0 | 21.3 ± 7.8 | 500.0 ± 0.0 | 500.0 ± 0.0 | 0.20 / 0.22 |
+| random | 10 | 21.5 ± 10.2 | 500.0 ± 0.0 | 500.0 ± 0.0 | 0.58 / 0.68 |
+| random | 20 | 17.0 ± 8.1 | 421.4 ± 146.1 | 403.2 ± 160.0 | 1.85 / 2.16 |
+| random | 25 | 16.8 ± 9.1 | 227.4 ± 138.6 | 219.2 ± 144.5 | 3.00 / 3.06 |
+| sinusoidal | 5 | 22.3 ± 5.2 | 500.0 ± 0.0 | 500.0 ± 0.0 | 0.93 / 0.94 |
+| sinusoidal | 8 | 17.3 ± 3.0 | 500.0 ± 0.0 | 500.0 ± 0.0 | 1.67 / 1.66 |
+| sinusoidal | 10 | 15.8 ± 2.4 | 94.2 ± 47.3 | 197.5 ± 175.0 | 3.97 / 3.88 |
+
+**Reading the table**
+
+- The actuator can only push with ±10 N (bang-bang). Sinusoidal wind with 10 N amplitude therefore sits exactly at the limit of controllability; above that the pole cannot be held by any controller, so stronger sinusoidal cases are deliberately not reported.
+- Up to random 10 N and sinusoidal 8 N both LQR and the learned policy hold the pole for the full 500 steps; LQR keeps it slightly more upright (smaller mean angle) under random wind.
+- Under strong random wind (20–25 N peak) both degrade similarly; LQR survives marginally longer.
+- At the controllability limit (sinusoidal 10 N) the CEM policy, which was trained on disturbed scenarios, survives about twice as long as the LQR designed for the undisturbed model, at a large spread.
+
+## Reproduce
 
 ```bash
-pip install gymnasium numpy
+python -m pip install numpy gymnasium matplotlib pytest
+python -m pytest -q
+python evaluate.py
 ```
 
-## Usage
+`evaluate.py` retrains CEM with fixed seeds, then writes `results/results.csv` and `results/comparison.png`. Use `python evaluate.py --smoke` for the shorter CI path. On the recorded local run, CEM training alone took 3.8 seconds on CPU; total evaluation took 11.8 seconds.
 
-### CLI Instructions
+## Limitations
 
-You can run a simple random agent to see how the environment behaves with the wind applied.
-
-To run the simulation:
-
-```bash
-python main.py
-```
-
-The script registers the environment and runs a few episodes showing the step counts and total rewards obtained by the random agent.
-
-## Configuration
-
-When initializing the environment, you can configure the wind behavior using the following parameters:
-
-- `wind_mode` (str): The type of wind disturbance.
-  - `'random'`: Applies a uniform random force at each step.
-  - `'sinusoidal'`: Applies a periodic oscillating force based on the current step count.
-- `wind_intensity` (float): The maximum magnitude of the wind force. Must be a non-negative number.
-
-Example configuration setup in Python:
-```python
-import gymnasium as gym
-import custom_cartpole  # registers the environment
-
-env = gym.make('WindCartPole-v0', wind_mode='sinusoidal', wind_intensity=2.5)
-```
-
-## API Reference
-
-### `custom_cartpole.py`
-
-#### `class WindCartPoleEnv(CartPoleEnv)`
-A custom Gymnasium environment based on the classic CartPole, introducing simulated external wind disturbances.
-- `__init__(self, wind_mode="random", wind_intensity=1.0, **kwargs)`: Initializes the environment with specific wind parameters.
-- `step(self, action)`: Runs one timestep of the environment's dynamics, calculating the wind force and applying it to the cart. Returns `(observation, reward, terminated, truncated, info)`.
-- `reset(self, *, seed=None, options=None)`: Resets the environment state and the internal step counter. Returns `(observation, info)`.
-
-### `main.py`
-
-#### Functions
-- `run_simulation(env_id='WindCartPole-v0', episodes=5, render_mode=None, **env_kwargs)`: Runs a simulation of the specified environment using a random agent for a given number of episodes.
-- `_run_single_episode(env, episode_index)`: Helper function to execute a single episode of the environment using a random action policy.
-- `main()`: Main entry point that runs example simulations with both 'random' and 'sinusoidal' wind modes.
+The learned policy is a linear threshold policy and is optimized against a small, fixed set of simulated scenarios. Evaluation uses one 12-seed batch and the simulator's 500-step limit; the capped scores conceal differences in easy conditions. These results do not establish performance on physical hardware or under other disturbance models.
