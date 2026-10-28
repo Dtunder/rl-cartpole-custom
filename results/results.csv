@@ -1,0 +1,22 @@
+wind_mode,wind_intensity,agent,n_episodes,mean_return,std_return,median_return,success_rate,mean_abs_angle_deg
+none,0.0,random,12,21.333,7.771,20.000,0.000,4.986
+none,0.0,LQR,12,500.000,0.000,500.000,1.000,0.205
+none,0.0,CEM linear policy,12,500.000,0.000,500.000,1.000,0.223
+random,10.0,random,12,21.500,10.169,18.000,0.000,4.986
+random,10.0,LQR,12,500.000,0.000,500.000,1.000,0.576
+random,10.0,CEM linear policy,12,500.000,0.000,500.000,1.000,0.678
+random,20.0,random,12,17.000,8.093,15.500,0.000,5.535
+random,20.0,LQR,12,421.417,146.080,500.000,0.667,1.853
+random,20.0,CEM linear policy,12,403.167,159.959,500.000,0.667,2.164
+random,25.0,random,12,16.833,9.100,14.000,0.000,5.805
+random,25.0,LQR,12,227.417,138.605,198.000,0.083,2.996
+random,25.0,CEM linear policy,12,219.167,144.513,187.000,0.083,3.063
+sinusoidal,5.0,random,12,22.333,5.153,22.000,0.000,4.073
+sinusoidal,5.0,LQR,12,500.000,0.000,500.000,1.000,0.930
+sinusoidal,5.0,CEM linear policy,12,500.000,0.000,500.000,1.000,0.941
+sinusoidal,8.0,random,12,17.333,2.953,18.000,0.000,3.962
+sinusoidal,8.0,LQR,12,500.000,0.000,500.000,1.000,1.671
+sinusoidal,8.0,CEM linear policy,12,500.000,0.000,500.000,1.000,1.658
+sinusoidal,10.0,random,12,15.750,2.350,16.000,0.000,4.026
+sinusoidal,10.0,LQR,12,94.167,47.316,73.500,0.000,3.968
+sinusoidal,10.0,CEM linear policy,12,197.500,175.010,120.500,0.083,3.877

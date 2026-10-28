@@ -16,7 +16,7 @@ class WindCartPoleEnv(CartPoleEnv):
     This environment is registered as 'WindCartPole-v0'.
 
     Attributes:
-        wind_mode (str): The mode of the wind disturbance ('random' or 'sinusoidal').
+        wind_mode (str): The mode of the wind disturbance ('none', 'random', or 'sinusoidal').
         wind_intensity (float): The maximum magnitude or scale of the wind force.
         current_step (int): Tracks the number of steps elapsed in the current episode.
     """
@@ -31,7 +31,7 @@ class WindCartPoleEnv(CartPoleEnv):
         Initialize the WindCartPole environment.
 
         Args:
-            wind_mode (str): The type of wind disturbance. Options are 'random' (uniform noise)
+            wind_mode (str): The type of wind disturbance: 'none', 'random' (uniform noise),
                 or 'sinusoidal' (periodic force based on step count).
             wind_intensity (float): The intensity/scale of the wind. Must be non-negative.
             **kwargs: Additional keyword arguments passed to the base `CartPoleEnv`.
@@ -54,12 +54,12 @@ class WindCartPoleEnv(CartPoleEnv):
             raise TypeError(
                 f"wind_mode must be a string, got {type(wind_mode).__name__}"
             )
-        if wind_mode not in ("random", "sinusoidal"):
+        if wind_mode not in ("none", "random", "sinusoidal"):
             logger.error(
-                f"wind_mode must be 'random' or 'sinusoidal', got {wind_mode!r}"
+                f"wind_mode must be 'random' or 'sinusoidal' (or 'none'), got {wind_mode!r}"
             )
             raise ValueError(
-                f"wind_mode must be 'random' or 'sinusoidal', got {wind_mode!r}"
+                f"wind_mode must be 'random' or 'sinusoidal' (or 'none'), got {wind_mode!r}"
             )
         if not isinstance(wind_intensity, (int, float)):
             logger.error(
@@ -115,8 +115,10 @@ class WindCartPoleEnv(CartPoleEnv):
 
         self.current_step += 1
 
-        # Calculate wind force - optimized conditional check
-        if self.wind_mode == "random":
+        # Calculate the external force. 'none' keeps the same dynamics without disturbance.
+        if self.wind_mode == "none":
+            wind_force = 0.0
+        elif self.wind_mode == "random":
             wind_force = self.np_random.uniform(
                 -self.wind_intensity, self.wind_intensity
             )
@@ -163,9 +165,10 @@ class WindCartPoleEnv(CartPoleEnv):
             theta = theta + self.tau * theta_dot
 
         self.state = np.array((x, x_dot, theta, theta_dot))
-        logger.debug(
-            f"Step {self.current_step}: action={action}, wind_force={wind_force:.4f}, state={self.state}"
-        )
+        if logger.isEnabledFor(logging.DEBUG):
+            logger.debug(
+                f"Step {self.current_step}: action={action}, wind_force={wind_force:.4f}, state={self.state}"
+            )
 
         terminated = bool(
             x < -self.x_threshold
